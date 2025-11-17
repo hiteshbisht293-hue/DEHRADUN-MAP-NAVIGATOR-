@@ -4,15 +4,14 @@
 #include <math.h>
 #include <ctype.h>
 
-#define MAX_POINTS 21
-#define ROAD_FACTOR 2.4  // Rough factor for road distance estimation
-
+#define MAX_POINTS 50
+#define ROAD_FACTOR 2.4
+#define DIST_THRESHOLD 2.5
 typedef struct {
     char name[50];
     double lat;
     double lng;
 } Point;
-
 // ==================== FUNCTION PROTOTYPES ====================
 double distance(double lat1, double lon1, double lat2, double lon2);
 int compare_ignore_case(const char *a, const char *b);
@@ -43,7 +42,36 @@ Point points[MAX_POINTS] = {
     {"Rajaji National Park Entrance", 30.4380, 78.0700},
     {"Dehradun Railway Station", 30.3200, 78.0320},
     {"Premnagar", 30.3560, 78.0610},
-    {"Doon Valley", 30.3240, 78.0380} 
+    {"Doon Valley", 30.3240, 78.0380},
+    {"Max Hospital", 30.3490, 78.0536},
+    {"Silver City Mall", 30.3198, 78.0139},
+    {"Paltan Bazaar", 30.3232, 78.0286},
+    {"Doon School", 30.3166, 78.0440},
+    {"Graphic Era University", 30.2680, 78.0670},
+    {"UPES Bidholi", 30.4125, 77.9677},
+    {"DIT University", 30.4083, 78.0933},
+    {"Clement Town", 30.2846, 78.0184},
+    {"IT Park", 30.3369, 78.0820},
+    {"Vikasnagar", 30.4555, 77.7720},
+    {"Fountain Chowk", 30.3181, 78.0291},
+    {"Subhash Nagar", 30.2981, 78.0298},
+    {"Kishan Nagar Chowk", 30.3195, 78.0502},
+    {"Ballupur Chowk", 30.3438, 78.0175},
+    {"Haridwar Bypass Road", 30.3030, 78.0340},
+    {"Jakhan", 30.3500, 78.0752},
+    {"Balliwala Chowk", 30.3186, 78.0167},
+    {"Race Course", 30.3159, 78.0370},
+    {"Selaqui", 30.3355, 77.9045},
+    {"Old Mussoorie Road", 30.3734, 78.0800},
+    {"Rajpur Chowk", 30.3781, 78.0750},
+    {"Dharampur", 30.3037, 78.0000},
+    {"Jhanda Mohalla", 30.3197, 78.0252},
+    {"Kargi Chowk", 30.2920, 78.0010},
+    {"Kaonli", 30.3300, 77.9950},
+    {"Bhagwanpur Chowk", 30.3150, 78.0505},
+    {"Krishna Nagar", 30.3171, 78.0270},
+    {"Gandhi Park", 30.3210, 78.0315},
+    {"Shastradhara Road", 30.3645, 78.0950}
 };
 
 // ==================== MAIN ====================
@@ -70,7 +98,58 @@ int main() {
 }
 
 // ==================== FUNCTIONS ====================
-
+// ==================== BFS IMPLEMENTATION ====================
+void BFS(int start, int goal) {
+    int visited[MAX_POINTS] = {0}, parent[MAX_POINTS], queue[100];
+    int front = 0, rear = 0;
+    for (int i = 0; i < MAX_POINTS; i++) parent[i] = -1;
+    visited[start] = 1;
+    queue[rear++] = start;
+    while (front < rear) {
+        int u = queue[front++];
+        if (u == goal) break;
+        for (int v = 0; v < MAX_POINTS; v++) {
+            if (!visited[v] &&
+                distance(points[u].lat, points[u].lng,
+                         points[v].lat, points[v].lng) < DIST_THRESHOLD) {
+                visited[v] = 1;
+                parent[v] = u;
+                queue[rear++] = v;
+            }
+        }
+    }
+    printf("Path: ");
+    int path[100], idx = 0;
+    for (int v = goal; v != -1; v = parent[v]) path[idx++] = v;
+    for (int i = idx - 1; i >= 0; i--) printf("→ %s ", points[path[i]].name);
+    printf("\n");
+}
+// ==================== DFS IMPLEMENTATION ====================
+int found = 0;
+void DFSUtil(int u, int goal, int visited[], int parent[]) {
+    if (found) return;
+    visited[u] = 1;
+    if (u == goal) { found = 1; return; }
+    for (int v = 0; v < MAX_POINTS; v++) {
+        if (!visited[v] &&
+            distance(points[u].lat, points[u].lng,
+                     points[v].lat, points[v].lng) < DIST_THRESHOLD) {
+            parent[v] = u;
+            DFSUtil(v, goal, visited, parent);
+        }
+    }
+}
+void DFS(int start, int goal) {
+    int visited[MAX_POINTS] = {0}, parent[MAX_POINTS];
+    for (int i = 0; i < MAX_POINTS; i++) parent[i] = -1;
+    found = 0;
+    DFSUtil(start, goal, visited, parent);
+    printf("Path: ");
+    int path[100], idx = 0;
+    for (int v = goal; v != -1; v = parent[v]) path[idx++] = v;
+    for (int i = idx - 1; i >= 0; i--) printf("→ %s ", points[path[i]].name);
+    printf("\n");
+}
 // Haversine formula
 double distance(double lat1, double lon1, double lat2, double lon2) {
     double R = 6371.0; // Earth radius in km
@@ -172,3 +251,4 @@ int get_landmark(const char *prompt) {
             printf("Please enter again.\n");
     }
 }
+
